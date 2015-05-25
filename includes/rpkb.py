@@ -68,6 +68,10 @@ class RPKB(revisionprocessor.RevisionProcessor):
 			newlabel_str = str(self.__reduceDictionary(val['label'],('en')))
 			newaliases_str = str(self.__reduceDictionary(val['aliases'],('en')))
 			newclaims_str = str(self.__reduceClaims(val['claims']))
+				
+
+		#	print newclaims_str
+	#		exit
 
 			self.descSize += len(newdesc_str)
 			self.claimSize += len(newclaims_str)
@@ -83,6 +87,8 @@ class RPKB(revisionprocessor.RevisionProcessor):
 
 	# writes an item in KB syntax to the output file
 	def __write(self,id, val):
+		#print val
+		#exit
 		title = 'Q' + str(id)
 		if 'datatype' in val :
 			title = 'P' + str(id)
@@ -111,12 +117,17 @@ class RPKB(revisionprocessor.RevisionProcessor):
 			if len(val['aliases']) > 0 :
 				for lang in val['aliases'].keys() :
 					for alias in val['aliases'][lang] :
-						self.output.write(u'' + title + ' alias {' + lang + ':' + alias + "} .\n")
-		if 'claims' in val :
+						#print alias
+						self.output.write(u'' + title + ' alias {' + lang + ':' + alias.get('value') + "} .\n")
+		if 'c-laims' in val :
+			#print val['claims']
+			#exit
 			if len(val['claims']) > 0 :
-				for claim in val['claims'] :
+				for pval,claims in val['claims'].items() :
 					quals = ''
-					if (len(claim['q']) + len(claim['refs'])) > 0 :
+					print pval
+					print claims
+					if ( len(claim['q']) + len(claim['refs'])) > 0 :
 						if (len(claim['q']) > 0) :
 							for q in claim['q'] :
 								quals += '  ' + snaktotext(q) + " ,\n"
@@ -144,43 +155,106 @@ class RPKB(revisionprocessor.RevisionProcessor):
 	# Simplify claim structure to save space
 	def __reduceClaims(self,claims):
 		newclaims = []
-		for claim in claims:
-			newclaim = claim.copy()
+		for p,claim in claims.items():
 
-			newclaim.pop('g',None)
+			#newclaim = claim.copy()
+			#newclaim = dict(zip(claim[0::2], claim[1::2]))
+			#newclaim = list(claim)
+			newclaim = claim.pop()
+			#newclaim['q'] = dict()	
+			
+	#		newclaim['q'] = {}
+			if 'qualifiers' in newclaim:
+				newclaim['q'] = newclaim.pop('qualifiers')
+			
+			newclaim['m'] = newclaim.pop('mainsnak')
+			
+			if 'references' in newclaim:
+				newclaim['refs'] = newclaim.pop('references')
+
+			#newclaim.pop('q')
 
 			newclaim['m'] = self.__reduceSnak(newclaim['m'])
 
 			if newclaim['rank'] == 1:
-				newclaim.pop('rank',None)
+				newclaim.pop('rank')
 
 			newqualifiers = []
 			hasQ = False
-			for snak in newclaim['q']:
-				hasQ = True
-				newqualifiers.append(self.__reduceSnak(snak))
-			if hasQ:
-				newclaim['q'] = newqualifiers
-			else:
-				newclaim.pop('q',None)
+			#print newclaim
+			if 'q' in newclaim:
+				for snak in newclaim['q']:
+					snakList = newclaim['q']
+					hasQ = True
+					#print snakList.items()
+					#exit
+					for somerandvalue,snaks in snakList.items():
+						for snak in snaks:
+					
+
+							if 'qualifiers-order' not in snak:
+				#				print snak
+								newqualifiers.append(self.__reduceSnak(snak))
+			
+				if hasQ:
+					newclaim['q'] = newqualifiers
+				else:
+					newclaim.pop('q')
 
 			newrefs = []
 			hasRef = False
-			for ref in newclaim['refs']:
-				hasRef = True
-				newref = []
-				for snak in ref:
-					newref.append(self.__reduceSnak(snak))
-				newrefs.append(newref)
-			if hasRef:
-				newclaim['refs'] = newrefs
-			else:
-				newclaim.pop('refs',None)
+			
+			#TODO SAME AS ABOVE HERE
+			if 'refs' in newclaim:
+				for ref in newclaim['refs']:
+					hasRef = True
+					newref = []
+					#print ref
+					#print "\n"
+					#for blub,snak in ref:
+						#print snaks
+					#	for snak in snaks:
+							#print snak
+					#	print snak
+					
+					snaks = ref.pop('snaks')
+					#print snaks
+					
+					for somepval,snakList in snaks.items():
+						for snak in snakList:
+
+
+							if 'snaks-order' not in ref:	
+								newref.append(self.__reduceSnak(ref))
+					newrefs.append(newref)
+				if hasRef:
+					newclaim['refs'] = newrefs
+				else:
+					newclaim.pop('refs')
 
 			newclaims.append(newclaim)
 		return newclaims
 
 	def __reduceSnak(self,snak):
+
+		#print snak
+		#print "\n"
+
+	#	if snak = {}:
+	#		print snaki
+		#if 'datavalue' in snak:
+		snak[0] = snak.get('snaktype')
+		snak[1] = snak.get('property')
+		#print snak
+		#print "\n"
+
+
+		if 'datavalue' in snak:
+			snak[2] = snak.get('datavalue').pop('type')
+			snak[3] = snak.get('datavalue').pop('value')
+	
+			snak.pop('datavalue')
+
 		if snak[0] == 'value':
 			if snak[2] == 'wikibase-entityid':
 				if snak[3]['entity-type'] == 'item':
@@ -196,3 +270,4 @@ class RPKB(revisionprocessor.RevisionProcessor):
 	def logReport(self):
 		logging.log('     * Number of latest revisions found: ' + str(self.curRevsFound))
 		logging.log('     * Size used for latest revs (in chars): claims: ' + str(self.claimSize) + ', aliases: ' + str(self.aliasSize) + ', labels: ' + str(self.labelSize) + ', links: ' + str(self.linkSize) + ', descs: ' + str(self.descSize))
+

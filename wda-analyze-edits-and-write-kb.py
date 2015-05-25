@@ -39,18 +39,18 @@ df.processRecentDumps(dp)
 #file.close()
 
 ## Store detailed results in files in the results directory:
-os.chdir(os.path.dirname(os.path.realpath(__file__))) # change back into our base directory if needed
-if not os.path.exists('results') :
-	os.makedirs('results')
+#os.chdir(os.path.dirname(os.path.realpath(__file__))) # change back into our base directory if needed
+#if not os.path.exists('results') :
+#	os.makedirs('results')
 
-curdate = df.getLatestDate()
+#curdate = df.getLatestDate()
 output.write(u'# ' + curdate + "\n")
-edits = open('results/edits-' + curdate + '.csv', 'w')
-rpedcount.writeResults(edits)
-edits.close()
-useredits = open('results/editsByUser-' + curdate + '.csv', 'w')
-rpedcount.writeEditsByUser(useredits)
-useredits.close()
+#edits = open('results/edits-' + curdate + '.csv', 'w')
+##rpedcount.writeResults(edits)
+#edits.close()
+#useredits = open('results/editsByUser-' + curdate + '.csv', 'w')
+#rpedcount.writeEditsByUser(useredits)
+#useredits.close()
 
 output.close()
 
