@@ -64,8 +64,8 @@ class DataFetcher:
 			else:
 				logging.logMore("Finding daily exports online ")
 				for line in urllib.urlopen('http://dumps.wikimedia.org/other/incr/wikidatawiki/') :
-					if not line.startswith('<tr><td class="n">') : continue
-					date = line[27:35]
+					if not line.startswith('<a href=') : continue
+					date = line[9:17]
 					if not re.match('\d\d\d\d\d\d\d\d', date) : continue
 					logging.logMore('.')
 					self.dailies.append(date)
